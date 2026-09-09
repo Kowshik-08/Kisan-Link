@@ -173,9 +173,13 @@ function setLang(lang) {
 
 // ---------------- AUTHENTICATION & SESSION ----------------
 function switchAuthMode(mode) {
+  if (selectedRole === 'admin' && mode === 'register') {
+    return; // Disallow registration for administrator
+  }
   authMode = mode;
   document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
-  document.getElementById('tabRegister').classList.toggle('active', mode === 'register');
+  const tabReg = document.getElementById('tabRegister');
+  if (tabReg) tabReg.classList.toggle('active', mode === 'register');
   document.getElementById('btnAuthSubmit').textContent = mode === 'login' ? (I18N[currentLang]?.logIn || 'Log in') : 'Create Account';
   document.getElementById('fieldLoginName').style.display = mode === 'register' ? 'block' : 'none';
 
@@ -199,8 +203,17 @@ function selectRole(role) {
   hideLoginError();
   filterLoginId(idInput);
 
-  if (authMode === 'register') {
-    switchAuthMode('register');
+  const tabRegister = document.getElementById('tabRegister');
+  if (role === 'admin') {
+    // Hide "Register New Account" completely for Administrator
+    if (tabRegister) tabRegister.style.display = 'none';
+    switchAuthMode('login');
+  } else {
+    // Show "Register New Account" for Farmer and Buyer
+    if (tabRegister) tabRegister.style.display = '';
+    if (authMode === 'register') {
+      switchAuthMode('register');
+    }
   }
 }
 
@@ -226,6 +239,11 @@ async function doAuthAction() {
   const id = document.getElementById('loginId').value.trim();
   const pass = document.getElementById('loginPass').value;
   const btn = document.getElementById('btnAuthSubmit');
+
+  if (selectedRole === 'admin' && authMode === 'register') {
+    showLoginError('Administrator accounts cannot be registered publicly. Please log in with your Admin ID.');
+    return;
+  }
 
   if (authMode === 'register' && !name) {
     showLoginError('Please enter your full name.');

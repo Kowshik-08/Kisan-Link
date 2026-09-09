@@ -54,6 +54,10 @@ class AuthService {
 
     const normalizedRole = (role || 'FARMER').toUpperCase();
 
+    if (normalizedRole === 'ADMIN') {
+      throw ApiError.forbidden('Administrator accounts cannot be registered publicly. Please log in with an authorized Admin ID.');
+    }
+
     // Check duplicate
     if (phone) {
       const existingUser = await prisma.user.findUnique({ where: { phone } });
