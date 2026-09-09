@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KisanLink — Sell smarter, not just higher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ============ LOGIN / REGISTER SCREEN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="lang-switch" id="loginLangSwitch">
+      <button class="active" data-lang="en" onclick="setLang('en')">English</button>
+      <button data-lang="te" onclick="setLang('te')">తెలుగు</button>
+      <button data-lang="hi" onclick="setLang('hi')">हिंदी</button>
+    </div>
+
+    <div class="login-brand">
+      <svg width="34" height="34" viewBox="0 0 38 38" fill="none">
+        <circle cx="19" cy="19" r="19" fill="#E4A72E"/>
+        <path d="M19 27C19 27 10 22.5 10 15.8C10 12 13 9.5 16 10.7C17.3 11.2 18.4 12.4 19 13.6C19.6 12.4 20.7 11.2 22 10.7C25 9.5 28 12 28 15.8C28 22.5 19 27 19 27Z" fill="#1F5E3D"/>
+      </svg>
+      <div>
+        <div class="login-brand-name">KisanLink</div>
+        <div class="login-brand-sub" data-i18n="loginSub">Market linkage &amp; price discovery</div>
+      </div>
+    </div>
+
+    <div class="role-tabs">
+      <button class="active" data-role="farmer" onclick="selectRole('farmer')" data-i18n="roleFarmer">Farmer</button>
+      <button data-role="buyer" onclick="selectRole('buyer')" data-i18n="roleBuyer">Buyer</button>
+      <button data-role="admin" onclick="selectRole('admin')" data-i18n="roleAdmin">Administrator</button>
+    </div>
+
+    <div class="auth-mode-switch">
+      <button type="button" id="tabLogin" class="active" onclick="switchAuthMode('login')">Log in</button>
+      <button type="button" id="tabRegister" onclick="switchAuthMode('register')">Register New Account</button>
+    </div>
+
+    <div class="role-desc" id="roleDesc" data-i18n="roleDescFarmer">Log in to enter your crop details and compare buyers and markets near you.</div>
+
+    <div class="login-field" id="fieldLoginName" style="display:none;">
+      <label id="lblLoginName" data-i18n="fullName">Full name</label>
+      <input type="text" id="loginName" placeholder="e.g. Ramesh Patil">
+    </div>
+
+    <div class="login-field">
+      <label id="lblLoginId" data-i18n="mobileNumber">Mobile number</label>
+      <input type="text" id="loginId" placeholder="10-digit mobile number" inputmode="numeric" oninput="filterLoginId(this)">
+    </div>
+
+    <div class="login-field" id="fieldLocation" style="display:none;">
+      <label id="lblLocation">Mandi / District Location</label>
+      <select id="loginLocation">
+        <option value="Warangal">Warangal</option>
+        <option value="Karimnagar">Karimnagar</option>
+        <option value="Nalgonda">Nalgonda</option>
+        <option value="Khammam">Khammam</option>
+        <option value="Adilabad">Adilabad</option>
+      </select>
+    </div>
+
+    <div class="login-field" id="fieldBusinessName" style="display:none;">
+      <label id="lblBusiness">Business / Firm Name</label>
+      <input type="text" id="loginBusiness" placeholder="e.g. Warangal APMC Traders">
+    </div>
+
+    <div class="login-field">
+      <label data-i18n="password">Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+    </div>
+
+    <div id="loginError" style="display:none; color:var(--danger); font-size:0.82rem; font-weight:600; margin-bottom:12px;"></div>
+
+    <button class="btn-login" id="btnAuthSubmit" onclick="doAuthAction()" data-i18n="logIn">Log in</button>
+    <div class="login-note" id="authNote" data-i18n="prototypeNote">Connected to KisanLink API · Accounts are verified in the database.</div>
+  </div>
+</div>
+
+<!-- ============ FARMER VIEW ============ -->
+<div id="farmerView" class="hidden">
+  <header class="top">
+    <div class="wrap">
+      <div class="top-row">
+        <div class="brand">
+          <svg width="36" height="36" viewBox="0 0 38 38" fill="none">
+            <circle cx="19" cy="19" r="19" fill="#E4A72E"/>
+            <path d="M19 27C19 27 10 22.5 10 15.8C10 12 13 9.5 16 10.7C17.3 11.2 18.4 12.4 19 13.6C19.6 12.4 20.7 11.2 22 10.7C25 9.5 28 12 28 15.8C28 22.5 19 27 19 27Z" fill="#1F5E3D"/>
+          </svg>
+          <div>
+            <div class="brand-name">KisanLink</div>
+            <div class="brand-sub">Market linkage &amp; price discovery for farmers</div>
+          </div>
+        </div>
+        <div class="top-right">
+          <div class="lang-switch" id="farmerLangSwitch">
+            <button class="active" data-lang="en" onclick="setLang('en')">EN</button>
+            <button data-lang="te" onclick="setLang('te')">తె</button>
+            <button data-lang="hi" onclick="setLang('hi')">हि</button>
+          </div>
+          <button class="nav-btn" onclick="openFarmerListingsModal()">🌾 My Harvest Lots</button>
+          <button class="nav-btn" onclick="openOrdersModal()">📜 My Deals</button>
+          <button class="cart-pill" onclick="openCartModal()">🛒 Cart <span class="badge-count" id="farmerCartCount">0</span></button>
+          <span class="role-pill" id="farmerGreeting" onclick="openProfileModal()" title="View Profile">Farmer</span>
+          <button class="btn-logout" onclick="logout()" data-i18n="logOut">Log out</button>
+        </div>
+      </div>
+      <div class="hero-line" data-i18n="heroLine">Not "who pays the most" — but "where do I actually take home more."</div>
+      <div class="hero-sub" data-i18n="heroSub">Enter your crop once. We compare mandis, FPOs and buyers near you — price, transport and fees included — so you can pick with confidence.</div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Live Mandi Price Ticker -->
+    <div class="price-ticker">
+      <div class="price-ticker-head">
+        <h3 data-i18n="marketPricesToday">📊 Today's market prices</h3>
+        <div class="price-updated"><span class="dot"></span><span id="priceUpdatedText" data-i18n="lastUpdated2h">Live benchmark rates</span></div>
+      </div>
+      <div class="price-grid" id="priceGrid">
+        <div style="grid-column:1/-1; text-align:center; padding:10px; color:var(--ink-soft);">Loading live market rates...</div>
+      </div>
+      <div class="price-source-note" data-i18n="priceSourceNote">Real-time prices from KisanLink pricing engine. In production this connects to government/mandi (eNAM / Agmarknet) live price feeds.</div>
+    </div>
+
+    <!-- Crop Inquiry & Price Discovery Form -->
+    <div class="form-card">
+      <h2 style="font-size:1.15rem; font-weight:600;" data-i18n="tellUsWhat">Tell us what you're selling</h2>
+      <div class="voice-row">
+        <button class="mic-btn" id="micBtn" onclick="startVoiceInput()" title="Speak your crop and quantity">🎤</button>
+        <span class="voice-hint" id="voiceHint" data-i18n="voiceHint">Tap the mic and say something like "500 kg tomatoes" — we'll fill the form for you.</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label data-i18n="crop">Crop</label>
+          <select id="crop" onchange="renderTrend()">
+            <option value="tomato" data-i18n="cropTomato">Tomato</option>
+            <option value="onion" data-i18n="cropOnion">Onion</option>
+            <option value="soybean" data-i18n="cropSoybean">Soybean</option>
+            <option value="cotton" data-i18n="cropCotton">Cotton</option>
+            <option value="wheat" data-i18n="cropWheat">Wheat</option>
+          </select>
+        </div>
+        <div class="field">
+          <label data-i18n="quantity">Quantity</label>
+          <div class="qty-row">
+            <input type="number" id="qty" value="500" min="1">
+            <select id="qtyUnit">
+              <option value="kg">kg</option>
+              <option value="quintal">quintal</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="yourLocation">Your location</label>
+          <select id="location">
+            <option value="warangal">Warangal</option>
+            <option value="karimnagar">Karimnagar</option>
+            <option value="nalgonda">Nalgonda</option>
+            <option value="khammam">Khammam</option>
+            <option value="adilabad">Adilabad</option>
+          </select>
+        </div>
+        <div class="field">
+          <label data-i18n="cropQuality">Crop quality</label>
+          <div class="quality-pills" id="qualityPills">
+            <button class="sel" data-q="A" onclick="pickQuality('A')" data-i18n="gradeA">Grade A</button>
+            <button data-q="B" onclick="pickQuality('B')" data-i18n="gradeB">Grade B</button>
+            <button data-q="C" onclick="pickQuality('C')" data-i18n="gradeC">Grade C</button>
+          </div>
+        </div>
+      </div>
+      <div class="submit-row">
+        <button class="btn-primary" id="btnFindBuyers" onclick="runSearch()" data-i18n="findBestBuyers">Find best buyers</button>
+        <span class="hint" data-i18n="findHint">Calculates net take-home return across mandis, FPOs &amp; private buyers</span>
+      </div>
+    </div>
+
+    <!-- FPO Aggregation Banner -->
+    <div class="fpo-banner">
+      <div><b data-i18n="fpoTitle">Selling through an FPO?</b> <span data-i18n="fpoBody">Farmer Producer Organisations pool produce from many farmers to negotiate better prices, cut transport cost per farmer, and reach bulk buyers directly.</span></div>
+      <div class="fpo-flow">
+        <span data-i18n="fpoYou">👨‍🌾 You</span><span class="arrow">→</span><span data-i18n="fpoFpo">🏢 FPO / Cooperative</span><span class="arrow">→</span><span data-i18n="fpoBuyer">🏪 Bulk Buyer</span>
+      </div>
+    </div>
+
+    <!-- Search & Discovery Results -->
+    <div class="results" id="results">
+      <div class="results-head">
+        <div>
+          <h2 id="resTitle">Ranked for your 500 kg of Tomato</h2>
+          <div class="results-sub" data-i18n="resultsSub">Ordered by what you'll actually receive after transport and selling costs — not just the listed price.</div>
+        </div>
+        <div class="sort-note" data-i18n="sortNote">Sorted: highest net return first</div>
+      </div>
+
+      <!-- Trend & Market Insight Card -->
+      <div class="trend-card">
+        <div>
+          <div class="trend-title" id="trendTitle" data-i18n="priceTrend">Price trend — last 7 days</div>
+          <div class="sparkline" id="sparkline"></div>
+          <div class="trend-labels"><span>D-6</span><span>D-5</span><span>D-4</span><span>D-3</span><span>D-2</span><span>D-1</span><span data-i18n="today">Today</span></div>
+          <div class="trend-caption" id="trendCaption">Loading price trend...</div>
+        </div>
+        <div class="insight-box">
+          <div class="trend-title" data-i18n="marketInsight">📊 Market insight</div>
+          <div class="il"><span data-i18n="currentPrice">Current price</span><b id="insightPrice">--</b></div>
+          <div class="il"><span data-i18n="sevenDayTrend">7-day trend</span><b id="insightTrend">--</b></div>
+          <div class="il"><span data-i18n="nearbyDemand">Nearby demand</span><b id="insightDemand">--</b></div>
+          <div id="recPill"></div>
+          <div class="rec-why" id="recWhy"></div>
+          <div class="estimate-flag" data-i18n="estimateFlag">These are estimates based on sample data, not a guarantee of future price.</div>
+        </div>
+      </div>
+
+      <!-- Ranked Buyer Option Cards -->
+      <div id="cardList"></div>
+
+      <div class="method-note">
+        <b data-i18n="howWeCalc">How we calculate this</b>
+        <div style="margin-top:6px;" data-i18n="howWeCalcBody">Net return = (price per kg × quantity) − transport cost − market/commission fee − handling cost. Transport is estimated from distance; you can confirm exact fare with the buyer before dispatch. Prices shown carry a source and last-updated time — verify before finalising a sale.</div>
+      </div>
+    </div>
+  </div>
+  <footer data-i18n="footerText">Prototype for SIH26132 — Strengthening Market Linkages and Price Discovery for Farmers · Powered by KisanLink REST Engine</footer>
+</div>
+
+<!-- ============ BUYER VIEW ============ -->
+<div id="buyerView" class="hidden">
+  <header class="top">
+    <div class="wrap">
+      <div class="top-row">
+        <div class="brand">
+          <svg width="36" height="36" viewBox="0 0 38 38" fill="none">
+            <circle cx="19" cy="19" r="19" fill="#E4A72E"/>
+            <path d="M19 27C19 27 10 22.5 10 15.8C10 12 13 9.5 16 10.7C17.3 11.2 18.4 12.4 19 13.6C19.6 12.4 20.7 11.2 22 10.7C25 9.5 28 12 28 15.8C28 22.5 19 27 19 27Z" fill="#1F5E3D"/>
+          </svg>
+          <div>
+            <div class="brand-name">KisanLink</div>
+            <div class="brand-sub">Buyer procurement dashboard</div>
+          </div>
+        </div>
+        <div class="top-right">
+          <div class="lang-switch">
+            <button class="active" data-lang="en" onclick="setLang('en')">EN</button>
+            <button data-lang="te" onclick="setLang('te')">తె</button>
+            <button data-lang="hi" onclick="setLang('hi')">हि</button>
+          </div>
+          <button class="nav-btn" onclick="openOrdersModal()">📦 Procurement Deals</button>
+          <button class="cart-pill" onclick="openCartModal()">🛒 Cart / Lots <span class="badge-count" id="buyerCartCount">0</span></button>
+          <span class="role-pill" id="buyerGreeting" onclick="openProfileModal()" title="View Profile">Buyer</span>
+          <button class="btn-logout" onclick="logout()" data-i18n="logOut">Log out</button>
+        </div>
+      </div>
+      <div class="hero-line">Fresh produce, straight from nearby farmers.</div>
+      <div class="hero-sub">See who's selling what, right now, and reach out directly — no middleman needed to find them.</div>
+    </div>
+  </header>
+
+  <div class="wrap dash-wrap">
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-num" id="buyerStatActive">--</div><div class="stat-label">Active listings near you</div></div>
+      <div class="stat-card"><div class="stat-num" id="buyerStatContacted">--</div><div class="stat-label">Farmers contacted</div></div>
+      <div class="stat-card"><div class="stat-num" id="buyerStatDeals">--</div><div class="stat-label">Deals closed this month</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <label style="font-weight:700; font-size:0.85rem; color:var(--ink-soft);">Filter by crop:</label>
+      <select id="buyerCropFilter" onchange="renderBuyerListings()">
+        <option value="">All Crops</option>
+        <option value="Tomato">Tomato</option>
+        <option value="Onion">Onion</option>
+        <option value="Soybean">Soybean</option>
+        <option value="Cotton">Cotton</option>
+        <option value="Wheat">Wheat</option>
+      </select>
+      <button class="btn-small-outline" onclick="renderBuyerListings()">↻ Refresh</button>
+    </div>
+
+    <div class="section-title">Farmer listings near you</div>
+    <div class="section-sub">Live harvest lots from regional farmers. Click on any lot to inspect details or add to staged order.</div>
+    <div id="buyerListings"></div>
+  </div>
+  <footer>Prototype for SIH26132 — Strengthening Market Linkages and Price Discovery for Farmers · Powered by KisanLink REST Engine</footer>
+</div>
+
+<!-- ============ ADMIN VIEW ============ -->
+<div id="adminView" class="hidden">
+  <header class="top">
+    <div class="wrap">
+      <div class="top-row">
+        <div class="brand">
+          <svg width="36" height="36" viewBox="0 0 38 38" fill="none">
+            <circle cx="19" cy="19" r="19" fill="#E4A72E"/>
+            <path d="M19 27C19 27 10 22.5 10 15.8C10 12 13 9.5 16 10.7C17.3 11.2 18.4 12.4 19 13.6C19.6 12.4 20.7 11.2 22 10.7C25 9.5 28 12 28 15.8C28 22.5 19 27 19 27Z" fill="#1F5E3D"/>
+          </svg>
+          <div>
+            <div class="brand-name">KisanLink</div>
+            <div class="brand-sub">Administrator dashboard</div>
+          </div>
+        </div>
+        <div class="top-right">
+          <div class="lang-switch">
+            <button class="active" data-lang="en" onclick="setLang('en')">EN</button>
+            <button data-lang="te" onclick="setLang('te')">తె</button>
+            <button data-lang="hi" onclick="setLang('hi')">हि</button>
+          </div>
+          <span class="role-pill" id="adminGreeting" onclick="openProfileModal()">Administrator</span>
+          <button class="btn-logout" onclick="logout()" data-i18n="logOut">Log out</button>
+        </div>
+      </div>
+      <div class="hero-line">Keep the marketplace trustworthy.</div>
+      <div class="hero-sub">Monitor listings, verify data freshness, and moderate offers that look stale or unreliable.</div>
+    </div>
+  </header>
+
+  <div class="wrap dash-wrap">
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-num">1,248</div><div class="stat-label">Registered farmers</div></div>
+      <div class="stat-card"><div class="stat-num">312</div><div class="stat-label">Registered buyers</div></div>
+      <div class="stat-card"><div class="stat-num">7</div><div class="stat-label">Listings flagged this week</div></div>
+    </div>
+
+    <div class="section-title">Listing moderation</div>
+    <div class="section-sub">Offers older than 24 hours or reported by users need review before they stay visible to farmers.</div>
+    <table class="admin-table">
+      <thead>
+        <tr><th>Buyer / Market</th><th>Crop</th><th>Last updated</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="adminTableBody"></tbody>
+    </table>
+  </div>
+  <footer>Prototype for SIH26132 — Strengthening Market Linkages and Price Discovery for Farmers · Powered by KisanLink REST Engine</footer>
+</div>
+
+<!-- ============ DEAL LIFECYCLE MODAL ============ -->
+<div id="dealModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title" id="dealBuyerName">Deal with Buyer</div>
+      <button class="btn-close-modal" onclick="closeDealModal()">&times;</button>
+    </div>
+    <div class="deal-steps" id="dealSteps"></div>
+    <div class="deal-status" id="dealStatus"></div>
+    <div class="deal-desc" id="dealDesc"></div>
+
+    <!-- Rating block when reaching Stage 7 (COMPLETED_RATED) -->
+    <div id="dealRatingBox" style="display:none; margin-top:16px; border-top:1px dashed var(--line); padding-top:12px;">
+      <label style="font-size:0.85rem; font-weight:700; color:var(--soil);">Rate your trading partner:</label>
+      <div class="star-rating" id="starRating">
+        <span onclick="setRating(1)">★</span>
+        <span onclick="setRating(2)">★</span>
+        <span onclick="setRating(3)">★</span>
+        <span onclick="setRating(4)">★</span>
+        <span onclick="setRating(5)">★</span>
+      </div>
+      <input type="text" id="dealComment" placeholder="Write feedback (e.g. Prompt payment, prompt delivery)" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:0.9rem;">
+    </div>
+
+    <div class="deal-actions">
+      <button class="btn-secondary" onclick="closeDealModal()" id="dealCloseBtn">Close</button>
+      <button class="btn-primary" onclick="advanceDeal()" id="dealNextBtn" style="flex:1;">Next step</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CART / STAGED LOTS MODAL ============ -->
+<div id="cartModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">🛒 Staged Harvest Lots</div>
+      <button class="btn-close-modal" onclick="closeCartModal()">&times;</button>
+    </div>
+    <div id="cartItemsList">
+      <div class="empty-state">
+        <div class="empty-icon">🧺</div>
+        <div class="empty-title">Your cart is empty</div>
+        <div class="empty-sub">Browse listings to stage bulk lots for procurement.</div>
+      </div>
+    </div>
+    <div class="cart-summary" id="cartSummaryBox" style="display:none;">
+      <div class="cart-summary-row">
+        <span>Total Staged Lots:</span>
+        <b id="cartTotalCount">0</b>
+      </div>
+      <div class="cart-summary-row total">
+        <span>Estimated Total:</span>
+        <b id="cartTotalAmount">₹0</b>
+      </div>
+    </div>
+    <div class="deal-actions" style="margin-top:16px;">
+      <button class="btn-secondary" onclick="clearCart()">Clear Cart</button>
+      <button class="btn-primary" id="btnCheckoutCart" onclick="checkoutCart()">Confirm &amp; Create Deal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRODUCT DETAILS MODAL ============ -->
+<div id="productModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title" id="pmCropTitle">Product Details</div>
+      <button class="btn-close-modal" onclick="closeProductModal()">&times;</button>
+    </div>
+    <div id="pmBody">
+      <div style="font-size:0.95rem; line-height:1.6;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--ink-soft);">Commodity:</span>
+          <b id="pmCommodity">--</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--ink-soft);">Quality Grade:</span>
+          <b id="pmGrade">--</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--ink-soft);">Available Quantity:</span>
+          <b id="pmQuantity">--</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--ink-soft);">Asking Price:</span>
+          <b id="pmPrice" style="color:var(--leaf); font-size:1.1rem;">--</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--ink-soft);">Origin Location:</span>
+          <b id="pmLocation">--</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--ink-soft);">Farmer / Seller:</span>
+          <b id="pmFarmerName">--</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--ink-soft);">Harvest Date:</span>
+          <span id="pmHarvestDate">--</span>
+        </div>
+      </div>
+    </div>
+    <div class="deal-actions" style="margin-top:20px;">
+      <button class="btn-secondary" onclick="addToCartFromModal()">🛒 Add to Cart</button>
+      <button class="btn-primary" onclick="inquireFromModal()">Direct Inquiry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FARMER LISTINGS MANAGEMENT MODAL ============ -->
+<div id="farmerListingsModal" class="modal-overlay">
+  <div class="modal-card" style="max-width:540px;">
+    <div class="modal-head">
+      <div class="modal-title">🌾 Manage My Harvest Lots</div>
+      <button class="btn-close-modal" onclick="closeFarmerListingsModal()">&times;</button>
+    </div>
+
+    <!-- Add New Lot Form -->
+    <div style="background:var(--paper-warm); padding:16px; border-radius:12px; margin-bottom:20px;">
+      <div style="font-weight:700; color:var(--soil); font-size:0.95rem; margin-bottom:12px;">+ List a New Harvest Lot</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div>
+          <label style="font-size:0.75rem; font-weight:700; color:var(--ink-soft);">Crop</label>
+          <select id="newLotCrop" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--line);">
+            <option value="Tomato">Tomato</option>
+            <option value="Onion">Onion</option>
+            <option value="Soybean">Soybean</option>
+            <option value="Cotton">Cotton</option>
+            <option value="Wheat">Wheat</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:700; color:var(--ink-soft);">Grade</label>
+          <select id="newLotGrade" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--line);">
+            <option value="GRADE_A">Grade A</option>
+            <option value="GRADE_B">Grade B</option>
+            <option value="GRADE_C">Grade C</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:700; color:var(--ink-soft);">Quantity (kg)</label>
+          <input type="number" id="newLotQty" value="500" min="10" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--line);">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; font-weight:700; color:var(--ink-soft);">Asking Price (₹/kg)</label>
+          <input type="number" id="newLotPrice" value="20" min="1" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--line);">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label style="font-size:0.75rem; font-weight:700; color:var(--ink-soft);">Village / Location</label>
+          <input type="text" id="newLotLocation" placeholder="e.g. Narsampet, Warangal" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--line);">
+        </div>
+      </div>
+      <button class="btn-primary" style="width:100%; margin-top:14px; padding:10px;" onclick="createHarvestLot()">Publish Harvest Listing</button>
+    </div>
+
+    <!-- Existing Lots -->
+    <div style="font-weight:700; color:var(--soil); font-size:0.95rem; margin-bottom:8px;">Active Listings</div>
+    <div id="farmerLotsList">
+      <div style="color:var(--ink-soft); font-size:0.85rem; padding:10px 0;">Loading your listings...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ USER PROFILE MODAL ============ -->
+<div id="profileModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">👤 User Profile</div>
+      <button class="btn-close-modal" onclick="closeProfileModal()">&times;</button>
+    </div>
+    <div id="profileContent" style="font-size:0.92rem; line-height:1.8;">
+      <div><b>Name:</b> <span id="profName">--</span></div>
+      <div><b>Role:</b> <span id="profRole">--</span></div>
+      <div><b>Mobile:</b> <span id="profPhone">--</span></div>
+      <div><b>Registered Location:</b> <span id="profLocation">--</span></div>
+      <div><b>Account Status:</b> <span class="verified-badge">Active &amp; Verified</span></div>
+    </div>
+    <div style="margin-top:20px; border-top:1px solid var(--line); padding-top:14px;">
+      <div style="font-weight:700; margin-bottom:8px;">Saved Delivery Addresses</div>
+      <div id="profAddressList" style="font-size:0.85rem; color:var(--ink-soft);">Loading addresses...</div>
+    </div>
+    <div class="deal-actions" style="margin-top:20px;">
+      <button class="btn-secondary" onclick="closeProfileModal()">Close</button>
+      <button class="btn-primary" onclick="logout()">Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ORDERS / DEALS HISTORY MODAL ============ -->
+<div id="ordersModal" class="modal-overlay">
+  <div class="modal-card" style="max-width:540px;">
+    <div class="modal-head">
+      <div class="modal-title">📜 My Active &amp; Past Deals</div>
+      <button class="btn-close-modal" onclick="closeOrdersModal()">&times;</button>
+    </div>
+    <div id="ordersList">
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">No deals initiated yet</div>
+        <div class="empty-sub">Send an offer or stage harvest lots to begin trading.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Toast Notification -->
+<div id="toast"></div>
+
+<!-- Scripts -->
+<script>
+  // Optional runtime override: set window.KISANLINK_API_URL if frontend is hosted on a separate domain without rewrites
+  window.KISANLINK_API_URL = window.KISANLINK_API_URL || '';
+</script>
+<script src="js/api.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+</body>
+</html>

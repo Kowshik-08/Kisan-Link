@@ -1,0 +1,45 @@
+{
+  "name": "kisanlink-backend",
+  "version": "1.0.0",
+  "description": "KisanLink Backend REST API - Market Linkage & Price Discovery for Farmers (SIH26132)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
+    "test": "node tests/api.test.js && node tests/frontend_integration.test.js",
+    "test:win": "C:\\Progra~1\\nodejs\\node.exe tests/api.test.js && C:\\Progra~1\\nodejs\\node.exe tests/frontend_integration.test.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:seed": "node prisma/seed.js",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "kisanlink",
+    "agriculture",
+    "market-linkage",
+    "price-discovery",
+    "farmers",
+    "express",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "KisanLink Team",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "localtunnel": "^2.0.2",
+    "nodemon": "^3.1.4",
+    "prisma": "^5.22.0"
+  }
+}

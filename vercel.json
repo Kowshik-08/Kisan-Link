@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "https://kisanlink-api.onrender.com/api/health"
+    },
+    {
+      "source": "/api/:match*",
+      "destination": "https://kisanlink-api.onrender.com/api/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/$1"
+    }
+  ]
+}

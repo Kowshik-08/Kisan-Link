@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # ==================================================================
+  # 1. PostgreSQL Database Service
+  # ==================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: kisanlink-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: kisanlink
+      POSTGRES_PASSWORD: kisanlink_secure_password_2026
+      POSTGRES_DB: kisanlink
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kisanlink -d kisanlink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==================================================================
+  # 2. KisanLink Backend REST API Service
+  # ==================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kisanlink-api
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://kisanlink:kisanlink_secure_password_2026@postgres:5432/kisanlink?schema=public
+      JWT_SECRET: kisanlink-production-jwt-secret-key-32chars-min
+      JWT_REFRESH_SECRET: kisanlink-production-refresh-secret-key-32chars
+      FRONTEND_URL: http://localhost:3000,https://kisanlink-drab.vercel.app
+      CLIENT_URL: http://localhost:3000,https://kisanlink-drab.vercel.app
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             node prisma/seed.js &&
+             node src/server.js"
+
+volumes:
+  postgres_data:
+    driver: local
