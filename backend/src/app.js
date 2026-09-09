@@ -11,6 +11,7 @@ const app = express();
 const allowedOrigins = [
   FRONTEND_URL,
   CLIENT_URL,
+  'https://kisan-link-sigma.vercel.app',
   'https://kisanlink-drab.vercel.app',
   'http://localhost:5000',
   'http://127.0.0.1:5000',
@@ -30,8 +31,10 @@ app.use(
       if (
         allowedOrigins.includes('*') ||
         allowedOrigins.includes(normalizedOrigin) ||
-        // Allow any Vercel preview/production deployment for kisanlink
-        /^https:\/\/kisanlink(-[a-z0-9-]+)?\.vercel\.app$/.test(normalizedOrigin) ||
+        // Allow any Vercel deployment (e.g., kisan-link-sigma.vercel.app, preview branches)
+        /^https:\/\/.*\.vercel\.app$/.test(normalizedOrigin) ||
+        // Allow Cloudflare tunnel
+        /^https:\/\/.*\.trycloudflare\.com$/.test(normalizedOrigin) ||
         // Allow local dev origins
         (NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin))
       ) {
