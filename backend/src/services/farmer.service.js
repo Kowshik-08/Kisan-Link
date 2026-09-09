@@ -26,7 +26,9 @@ class FarmerService {
       orderBy: { name: 'asc' },
     });
 
-    const prices = products.map((p) => ({
+    const baseProducts = products.filter((p) => !p.slug || !p.slug.startsWith('lot_'));
+
+    const prices = baseProducts.map((p) => ({
       productId: p.id,
       cropSlug: p.slug,
       label: p.name,
@@ -173,22 +175,49 @@ class FarmerService {
       where: { userId: farmerUserId },
     });
 
-    const products = await prisma.product.findMany({
+    if (!farmer) {
+      return [];
+    }
+
+    const allProducts = await prisma.product.findMany({
       where: { isActive: true },
-      take: 6,
+      orderBy: { createdAt: 'desc' },
     });
 
-    const listings = products.map((p) => ({
-      id: p.id,
-      commodity: p.name,
-      name: p.name,
-      quantityAvailableKg: 500,
-      basePricePerKg: Number(p.basePrice),
-      qualityGrade: 'GRADE_A',
-      mandiLocation: farmer ? `${farmer.village || 'Narsampet'}, ${farmer.district || 'Warangal'}` : 'Warangal',
-    }));
+    const farmerLots = allProducts.filter((p) =>
+      p.slug && (p.slug.startsWith(`lot_${farmer.id}`) || p.nameTe === farmer.id)
+    );
 
-    return listings;
+    return farmerLots.map((lot) => {
+      let qty = 500;
+      let grade = 'GRADE_A';
+      let loc = `${farmer.village}, ${farmer.district}`;
+
+      if (lot.nameHi && lot.nameHi.includes('|')) {
+        const parts = lot.nameHi.split('|');
+        if (parts[0] && !isNaN(parts[0])) qty = Number(parts[0]);
+        if (parts[1]) grade = parts[1];
+        if (parts[2]) loc = parts[2];
+      } else if (lot.slug && lot.slug.startsWith('lot_')) {
+        const parts = lot.slug.split('_');
+        if (parts.length >= 4) {
+          if (!isNaN(parts[2])) qty = Number(parts[2]);
+          if (parts[3]) grade = parts[3];
+        }
+      }
+
+      return {
+        id: lot.id,
+        commodity: lot.name,
+        name: lot.name,
+        icon: lot.icon || '🌾',
+        quantityAvailableKg: qty,
+        basePricePerKg: Number(lot.basePrice),
+        qualityGrade: grade,
+        mandiLocation: loc,
+        createdAt: lot.createdAt,
+      };
+    });
   }
 
   /**
@@ -196,17 +225,44 @@ class FarmerService {
    */
   static async createHarvestLot(farmerUserId, data) {
     const { commodity, qualityGrade, quantityAvailableKg, basePricePerKg, mandiLocation } = data;
-    const cat = (await prisma.category.findFirst()) || { id: 'default-cat' };
+
+    const farmer = await prisma.farmer.findUnique({
+      where: { userId: farmerUserId },
+    });
+
+    if (!farmer) {
+      throw ApiError.notFound('Farmer profile not found.');
+    }
+
+    const allProducts = await prisma.product.findMany({ where: { isActive: true } });
+    const baseProduct = allProducts.find(
+      (p) => (!p.slug || !p.slug.startsWith('lot_')) && p.name.toLowerCase() === (commodity || '').toLowerCase()
+    );
+
+    const cat = baseProduct
+      ? { id: baseProduct.categoryId }
+      : (await prisma.category.findFirst()) || { id: '11111111-1111-4111-a111-111111111111' };
+
+    const cleanName = baseProduct ? baseProduct.name : (commodity || 'Produce');
+    const icon = baseProduct ? baseProduct.icon : '🌾';
+    const qtyKg = Number(quantityAvailableKg) || 500;
+    const price = Number(basePricePerKg) || (baseProduct ? Number(baseProduct.basePrice) : 20);
+    const grade = qualityGrade || 'GRADE_A';
+    const loc = mandiLocation || `${farmer.village}, ${farmer.district}`;
+
+    const slug = `lot_${farmer.id}_${qtyKg}_${grade}_${Date.now()}`;
 
     const product = await prisma.product.create({
       data: {
-        name: commodity || 'Produce',
-        slug: `${(commodity || 'lot').toLowerCase()}-${Date.now()}`,
-        icon: '🌾',
-        basePrice: Number(basePricePerKg) || 20,
+        name: cleanName,
+        slug,
+        icon,
+        basePrice: price,
         standardUnit: 'KG',
-        priceTrend: [Number(basePricePerKg) || 20, Number(basePricePerKg) || 20],
+        priceTrend: [price],
         categoryId: cat.id,
+        nameTe: farmer.id,
+        nameHi: `${qtyKg}|${grade}|${loc}`,
         isActive: true,
       },
     });
@@ -214,11 +270,43 @@ class FarmerService {
     return {
       id: product.id,
       commodity: product.name,
-      qualityGrade: qualityGrade || 'GRADE_A',
-      quantityAvailableKg: Number(quantityAvailableKg) || 500,
+      qualityGrade: grade,
+      quantityAvailableKg: qtyKg,
       basePricePerKg: Number(product.basePrice),
-      mandiLocation: mandiLocation || 'Warangal',
+      mandiLocation: loc,
+      createdAt: product.createdAt,
     };
+  }
+
+  /**
+   * Deletes a harvest lot listing for a farmer.
+   */
+  static async deleteHarvestLot(farmerUserId, lotId) {
+    const farmer = await prisma.farmer.findUnique({
+      where: { userId: farmerUserId },
+    });
+
+    if (!farmer) {
+      throw ApiError.notFound('Farmer profile not found.');
+    }
+
+    const lot = await prisma.product.findUnique({
+      where: { id: lotId },
+    });
+
+    if (!lot) {
+      throw ApiError.notFound('Harvest lot not found.');
+    }
+
+    if (lot.nameTe !== farmer.id && (!lot.slug || !lot.slug.startsWith(`lot_${farmer.id}`))) {
+      throw ApiError.forbidden('You can only delete your own harvest lots.');
+    }
+
+    await prisma.product.delete({
+      where: { id: lot.id },
+    });
+
+    return { id: lot.id, deleted: true };
   }
 }
 

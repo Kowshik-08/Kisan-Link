@@ -30,14 +30,17 @@ class BuyerService {
       },
     });
 
-    // Total available farmers in the same state/district
-    const nearbyListings = await prisma.farmer.count();
+    // Total available harvest lots in database
+    const allProducts = await prisma.product.findMany({
+      where: { isActive: true },
+    });
+    const activeLotsCount = allProducts.filter((p) => p.slug && p.slug.startsWith('lot_')).length;
 
     return {
-      activeListings: nearbyListings + 9,
-      activeListingsNearYou: nearbyListings + 9, // dynamic pool representation
-      farmersContacted: buyer.totalDealsCount > 0 ? buyer.totalDealsCount + 3 : 6,
-      dealsClosedThisMonth: closedDeals > 0 ? closedDeals : 3,
+      activeListings: activeLotsCount,
+      activeListingsNearYou: activeLotsCount,
+      farmersContacted: buyer.totalDealsCount || activeDeals || 0,
+      dealsClosedThisMonth: closedDeals,
       currentActiveDeals: activeDeals,
       reputationScore: Number(buyer.ratingAverage),
     };
@@ -46,9 +49,23 @@ class BuyerService {
   /**
    * Fetches real-time feed of farmer produce listings for buyers to browse.
    */
-  static async getFarmerListingsFeed() {
-    // In our schema, we query Farmers and their latest orders or active crops
-    const farmers = await prisma.farmer.findMany({
+  static async getFarmerListingsFeed(query = {}) {
+    const { crop } = query;
+
+    // Query active harvest lots (slug starts with 'lot_')
+    const allProducts = await prisma.product.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let lots = allProducts.filter((p) => p.slug && p.slug.startsWith('lot_'));
+
+    if (crop) {
+      lots = lots.filter((p) => p.name.toLowerCase() === crop.toLowerCase());
+    }
+
+    // Fetch all farmers for attribution
+    const allFarmers = await prisma.farmer.findMany({
       include: {
         user: {
           select: {
@@ -57,29 +74,62 @@ class BuyerService {
           },
         },
       },
-      take: 10,
     });
+    const farmerMap = new Map(allFarmers.map((f) => [f.id, f]));
 
-    const products = await prisma.product.findMany({
-      where: { isActive: true },
-      take: 5,
-    });
+    const listings = lots.map((lot) => {
+      let farmerId = lot.nameTe;
+      if (!farmerId && lot.slug && lot.slug.startsWith('lot_')) {
+        const parts = lot.slug.split('_');
+        farmerId = parts[1];
+      }
 
-    // Generate listing feed combining farmers and seasonal crops
-    const listings = farmers.map((f, idx) => {
-      const product = products[idx % products.length] || products[0];
-      const quantities = ['500 kg', '1.2 quintal', '800 kg', '3 quintal', '5 quintal'];
-      const updatedTimes = ['20 min ago', '1 hr ago', '2 hr ago', '3 hr ago', '4 hr ago'];
+      const farmer = farmerMap.get(farmerId);
+      const farmerName = farmer?.user?.fullName || 'Local Farmer';
+
+      let qty = 500;
+      let grade = 'GRADE_A';
+      let loc = farmer ? `${farmer.village}, ${farmer.district}` : 'Warangal';
+
+      if (lot.nameHi && lot.nameHi.includes('|')) {
+        const parts = lot.nameHi.split('|');
+        if (parts[0] && !isNaN(parts[0])) qty = Number(parts[0]);
+        if (parts[1]) grade = parts[1];
+        if (parts[2]) loc = parts[2];
+      } else if (lot.slug && lot.slug.startsWith('lot_')) {
+        const parts = lot.slug.split('_');
+        if (parts.length >= 4) {
+          if (!isNaN(parts[2])) qty = Number(parts[2]);
+          if (parts[3]) grade = parts[3];
+        }
+      }
+
+      const timeDiffMs = Date.now() - new Date(lot.updatedAt || lot.createdAt).getTime();
+      const mins = Math.max(0, Math.floor(timeDiffMs / (1000 * 60)));
+      let updatedHuman = 'recently';
+      if (mins < 1) updatedHuman = 'just now';
+      else if (mins < 60) updatedHuman = `${mins} min ago`;
+      else {
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) updatedHuman = `${hours} hr ago`;
+        else updatedHuman = `${Math.floor(hours / 24)} d ago`;
+      }
 
       return {
-        farmerId: f.id,
-        farmerName: f.user.fullName,
-        village: `${f.village}, ${f.district}`,
-        crop: product ? product.name : 'Tomato',
-        icon: product ? product.icon : '🍅',
-        quantityDisplay: quantities[idx % quantities.length],
-        askPrice: `₹${product ? Number(product.basePrice) + 1 : 19}/kg`,
-        updatedHuman: updatedTimes[idx % updatedTimes.length],
+        id: lot.id,
+        productId: lot.id,
+        farmerId: farmerId || '',
+        farmerName,
+        village: loc,
+        crop: lot.name,
+        icon: lot.icon || '🌾',
+        quantityDisplay: `${qty} kg`,
+        quantityKg: qty,
+        qualityGrade: grade,
+        askPrice: `₹${Number(lot.basePrice)}/kg`,
+        pricePerKg: Number(lot.basePrice),
+        updatedHuman,
+        createdAt: lot.createdAt,
       };
     });
 

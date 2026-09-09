@@ -18,5 +18,6 @@ router.post('/discover-buyers', FarmerController.discoverBuyers);
 // Farmer's own harvest listings
 router.get('/listings', authenticate, authorizeRoles('FARMER', 'ADMIN'), FarmerController.getMyListings);
 router.post('/listings', authenticate, authorizeRoles('FARMER', 'ADMIN'), FarmerController.createHarvestLot);
+router.delete('/listings/:id', authenticate, authorizeRoles('FARMER', 'ADMIN'), FarmerController.deleteHarvestLot);
 
 module.exports = router;

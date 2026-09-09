@@ -252,6 +252,42 @@ function resetMockDb() {
     },
   ];
 
+  // Seed authentic harvest lots listed by farmers in the database
+  const lotTomatoId = '1a1a1a1a-1111-4111-a111-111111111111';
+  const lotOnionId = '2b2b2b2b-2222-4222-a222-222222222222';
+  products.push(
+    {
+      id: lotTomatoId,
+      name: 'Tomato',
+      slug: `lot_${farmer1Id}_500_GRADE_A_seed1`,
+      icon: '🍅',
+      basePrice: 19.0,
+      standardUnit: 'KG',
+      priceTrend: [19.0],
+      categoryId: catVegId,
+      nameTe: farmer1Id,
+      nameHi: '500|GRADE_A|Narsampet, Warangal',
+      isActive: true,
+      createdAt: new Date(Date.now() - 3600000),
+      updatedAt: new Date(Date.now() - 3600000),
+    },
+    {
+      id: lotOnionId,
+      name: 'Onion',
+      slug: `lot_${farmer2Id}_800_GRADE_A_seed2`,
+      icon: '🧅',
+      basePrice: 15.0,
+      standardUnit: 'KG',
+      priceTrend: [15.0],
+      categoryId: catVegId,
+      nameTe: farmer2Id,
+      nameHi: '800|GRADE_A|ReddyPalem, Warangal',
+      isActive: true,
+      createdAt: new Date(Date.now() - 7200000),
+      updatedAt: new Date(Date.now() - 7200000),
+    }
+  );
+
   const buyer1Id = 'eeee1111-1111-4111-a111-111111111111';
   const buyer2Id = 'eeee2222-2222-4222-a222-222222222222';
   buyers = [
@@ -540,6 +576,26 @@ const mockPrisma = {
       let list = [...products];
       if (where) {
         if (where.isActive !== undefined) list = list.filter((p) => p.isActive === where.isActive);
+        if (where.nameTe !== undefined) {
+          if (where.nameTe === null) list = list.filter((p) => !p.nameTe);
+          else if (typeof where.nameTe === 'object' && where.nameTe.not !== undefined) {
+            list = list.filter((p) => p.nameTe !== where.nameTe.not && p.nameTe !== null && p.nameTe !== undefined);
+          } else {
+            list = list.filter((p) => p.nameTe === where.nameTe);
+          }
+        }
+        if (where.name) {
+          const val = typeof where.name === 'object' ? where.name.equals : where.name;
+          if (val) list = list.filter((p) => p.name.toLowerCase() === val.toLowerCase());
+        }
+        if (where.slug) {
+          if (typeof where.slug === 'object') {
+            if (where.slug.startsWith) list = list.filter((p) => p.slug && p.slug.startsWith(where.slug.startsWith));
+            if (where.slug.not && where.slug.not.startsWith) list = list.filter((p) => !p.slug || !p.slug.startsWith(where.slug.not.startsWith));
+          } else if (typeof where.slug === 'string') {
+            list = list.filter((p) => p.slug === where.slug);
+          }
+        }
         if (where.category) {
           const catCondition = where.category.is ? where.category.is.OR : where.category.OR;
           if (catCondition) {
@@ -563,11 +619,19 @@ const mockPrisma = {
           if (where.basePrice.lte !== undefined) list = list.filter((p) => Number(p.basePrice) <= where.basePrice.lte);
         }
       }
+      if (orderBy) {
+        if (orderBy.createdAt === 'desc') list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        if (orderBy.name === 'asc') list.sort((a, b) => a.name.localeCompare(b.name));
+      }
       return list.map((p) => {
         const res = { ...p };
         if (include?.category) res.category = categories.find((c) => c.id === p.categoryId) || null;
         return res;
       });
+    },
+    count: async ({ where } = {}) => {
+      const list = await mockPrisma.product.findMany({ where });
+      return list.length;
     },
     findUnique: async ({ where, include }) => {
       const p = products.find((x) => (where.id && x.id === where.id) || (where.slug && x.slug === where.slug));

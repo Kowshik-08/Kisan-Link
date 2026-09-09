@@ -196,6 +196,8 @@ window.farmerApi = {
   discoverBuyers: (searchParams) => client.post('/farmer/discover-buyers', searchParams),
   getMyDeals: () => client.get('/farmer/deals'),
   getMyListings: () => client.get('/farmer/listings'),
+  createListing: (data) => client.post('/farmer/listings', data),
+  deleteListing: (id) => client.delete(`/farmer/listings/${id}`),
 };
 
 window.buyerApi = {

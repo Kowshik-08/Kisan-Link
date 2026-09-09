@@ -60,6 +60,7 @@ const I18N = {
     fpoBody: "Farmer Producer Organisations pool produce from many farmers to negotiate better prices, cut transport cost per farmer, and reach bulk buyers directly.",
     fpoYou: "👨‍🌾 You", fpoFpo: "🏢 FPO / Cooperative", fpoBuyer: "🏪 Bulk Buyer",
     resultsSub: "Ordered by what you'll actually receive after transport and selling costs — not just the listed price.",
+    rankedBuyers: "Ranked Buyers",
     sortNote: "Sorted: highest net return first",
     priceTrend: "Price trend — last 7 days", today: "Today",
     marketInsight: "📊 Market insight", currentPrice: "Current price", sevenDayTrend: "7-day trend", nearbyDemand: "Nearby demand",
@@ -93,6 +94,7 @@ const I18N = {
     fpoBody: "రైతు ఉత్పత్తిదారుల సంస్థలు (FPO) చాలామంది రైతుల ఉత్పత్తులను కలిపి మెరుగైన ధరల కోసం చర్చించి, రవాణా ఖర్చును తగ్గించి, పెద్ద కొనుగోలుదారులను నేరుగా చేరుకుంటాయి.",
     fpoYou: "👨‍🌾 మీరు", fpoFpo: "🏢 FPO / సహకార సంఘం", fpoBuyer: "🏪 బల్క్ కొనుగోలుదారు",
     resultsSub: "రవాణా మరియు అమ్మకపు ఖర్చుల తర్వాత మీకు నిజంగా అందేదాని ఆధారంగా క్రమబద్ధీకరించబడింది — కేవలం జాబితా ధర కాదు.",
+    rankedBuyers: "ర్యాంక్ చేయబడిన కొనుగోలుదారులు",
     sortNote: "క్రమం: అత్యధిక నికర రాబడి మొదట",
     priceTrend: "ధర ధోరణి — గత 7 రోజులు", today: "ఈరోజు",
     marketInsight: "📊 మార్కెట్ అంతర్దృష్టి", currentPrice: "ప్రస్తుత ధర", sevenDayTrend: "7-రోజుల ధోరణి", nearbyDemand: "సమీప డిమాండ్",
@@ -126,6 +128,7 @@ const I18N = {
     fpoBody: "किसान उत्पादक संगठन (FPO) कई किसानों की उपज इकट्ठा कर बेहतर दाम तय करते हैं, प्रति किसान परिवहन लागत घटाते हैं, और सीधे थोक खरीदारों तक पहुँचाते हैं।",
     fpoYou: "👨‍🌾 आप", fpoFpo: "🏢 FPO / सहकारी समिति", fpoBuyer: "🏪 थोक खरीदार",
     resultsSub: "परिवहन और बिक्री लागत के बाद आपको असल में जो मिलेगा, उसके अनुसार क्रमबद्ध — केवल सूचीबद्ध दाम नहीं।",
+    rankedBuyers: "रैंक किए गए खरीदार",
     sortNote: "क्रम: सबसे अधिक शुद्ध लाभ पहले",
     priceTrend: "मूल्य रुझान — पिछले 7 दिन", today: "आज",
     marketInsight: "📊 बाज़ार जानकारी", currentPrice: "वर्तमान दाम", sevenDayTrend: "7-दिन का रुझान", nearbyDemand: "नज़दीकी मांग",
@@ -313,9 +316,10 @@ function activateDashboardForRole(role, userName) {
   if (role === 'farmer') {
     document.getElementById('farmerView').classList.remove('hidden');
     document.getElementById('farmerGreeting').textContent = userName || 'Farmer';
+    syncCropsFromDatabase();
     renderPriceGrid();
     renderTrend();
-    runSearch(true);
+    document.getElementById('results')?.classList.remove('show');
     updateCartBadge();
   } else if (role === 'buyer') {
     document.getElementById('buyerView').classList.remove('hidden');
@@ -722,14 +726,14 @@ async function renderBuyerStats() {
   try {
     const res = await window.buyerApi.getStats();
     if (res && res.data) {
-      document.getElementById('buyerStatActive').textContent = res.data.activeListings || '14';
-      document.getElementById('buyerStatContacted').textContent = res.data.farmersContacted || '6';
-      document.getElementById('buyerStatDeals').textContent = res.data.dealsClosedThisMonth || '3';
+      document.getElementById('buyerStatActive').textContent = res.data.activeListings !== undefined ? res.data.activeListings : 0;
+      document.getElementById('buyerStatContacted').textContent = res.data.farmersContacted !== undefined ? res.data.farmersContacted : 0;
+      document.getElementById('buyerStatDeals').textContent = res.data.dealsClosedThisMonth !== undefined ? res.data.dealsClosedThisMonth : 0;
     }
   } catch (e) {
-    document.getElementById('buyerStatActive').textContent = '14';
-    document.getElementById('buyerStatContacted').textContent = '6';
-    document.getElementById('buyerStatDeals').textContent = '3';
+    document.getElementById('buyerStatActive').textContent = '0';
+    document.getElementById('buyerStatContacted').textContent = '0';
+    document.getElementById('buyerStatDeals').textContent = '0';
   }
 }
 
@@ -758,16 +762,17 @@ async function renderBuyerListings() {
 
     listings.forEach(l => {
       const farmerName = l.farmerName || l.farmer || 'Local Farmer';
-      const crop = l.crop || 'Crop';
-      const qty = l.quantityDisplay || l.qty || '500 kg';
-      const ask = l.askPrice || l.ask || '₹20/kg';
-      const updated = l.updatedHuman || l.updated || 'recently';
+      const crop = l.crop || 'Produce';
+      const qty = l.quantityDisplay || `${l.quantityKg || 500} kg`;
+      const ask = l.askPrice || `₹${l.pricePerKg || 20}/kg`;
+      const updated = l.updatedHuman || 'recently';
       const village = l.village || 'Warangal';
+      const grade = l.qualityGrade || 'GRADE_A';
 
       const row = document.createElement('div');
       row.className = 'listing-row';
       row.innerHTML = `
-        <div class="listing-left" onclick="viewProductDetails('${l.id || l.productId || ''}', '${crop}', '${qty}', '${ask}', '${farmerName.replace(/'/g, "\\'")}', '${village}')">
+        <div class="listing-left" onclick="viewProductDetails('${l.id || l.productId || ''}', '${crop}', '${qty}', '${ask}', '${farmerName.replace(/'/g, "\\'")}', '${village.replace(/'/g, "\\'")}', '${grade}', '${updated}')">
           <div class="crop-badge">${l.icon || '🌾'}</div>
           <div>
             <div class="listing-title">${crop} · ${qty} <span class="type-tag type-mandi" style="font-size:0.7rem; margin-left:6px;">View details</span></div>
@@ -776,7 +781,7 @@ async function renderBuyerListings() {
         </div>
         <div class="listing-right">
           <div class="price-ask">${ask}</div>
-          <button class="btn-small-outline" onclick="stageInCart('${l.id || l.productId || ''}', '${crop}', 100, '${ask}')">Stage in Cart</button>
+          <button class="btn-small-outline" onclick="stageInCart('${l.id || l.productId || ''}', '${crop}', ${l.quantityKg || 100}, '${ask}')">Stage in Cart</button>
           <button class="btn-small" onclick="inquireFarmer('${l.farmerId || ''}', '${farmerName.replace(/'/g, "\\'")}', '${crop}', '${qty}')">Contact farmer</button>
         </div>
       `;
@@ -852,7 +857,8 @@ async function renderCart() {
     let totalQty = 0;
 
     items.forEach(item => {
-      const price = Number(item.product?.basePricePerKg || 25);
+      const price = Number(item.targetPricePerKg || item.product?.basePrice || item.product?.basePricePerKg || 20);
+      const title = item.product?.name || item.product?.commodity || 'Harvest Lot';
       const subtotal = price * item.quantity;
       totalEstimated += subtotal;
       totalQty += item.quantity;
@@ -861,7 +867,7 @@ async function renderCart() {
       div.className = 'cart-item';
       div.innerHTML = `
         <div style="flex:1;">
-          <div class="cart-item-title">${item.product?.commodity || 'Harvest Lot'}</div>
+          <div class="cart-item-title">${item.product?.icon ? item.product.icon + ' ' : ''}${title}</div>
           <div class="cart-item-meta">₹${price}/kg · Subtotal: ${fmtINR(subtotal)}</div>
         </div>
         <div class="cart-qty-ctrl">
@@ -959,16 +965,16 @@ async function checkoutCart() {
 }
 
 // ---------------- PRODUCT DETAILS MODAL ----------------
-function viewProductDetails(id, crop, qty, ask, farmer, village) {
-  currentViewingProduct = { id, crop, qty, ask, farmer, village };
+function viewProductDetails(id, crop, qty, ask, farmer, village, grade, updated) {
+  currentViewingProduct = { id, crop, qty, ask, farmer, village, grade, updated };
   document.getElementById('pmCropTitle').textContent = `${crop} Harvest Lot`;
   document.getElementById('pmCommodity').textContent = crop;
-  document.getElementById('pmGrade').textContent = 'Grade A (Assayed)';
+  document.getElementById('pmGrade').textContent = (grade || 'GRADE_A').replace('GRADE_', 'Grade ');
   document.getElementById('pmQuantity').textContent = qty;
   document.getElementById('pmPrice').textContent = ask;
   document.getElementById('pmLocation').textContent = village;
   document.getElementById('pmFarmerName').textContent = farmer;
-  document.getElementById('pmHarvestDate').textContent = '2 days ago';
+  document.getElementById('pmHarvestDate').textContent = updated || 'Recently';
 
   document.getElementById('productModal').classList.add('show');
 }
@@ -979,7 +985,8 @@ function closeProductModal() {
 
 function addToCartFromModal() {
   if (!currentViewingProduct) return;
-  stageInCart(currentViewingProduct.id, currentViewingProduct.crop, 200, currentViewingProduct.ask);
+  const parsedQty = parseFloat(currentViewingProduct.qty) || 100;
+  stageInCart(currentViewingProduct.id, currentViewingProduct.crop, parsedQty, currentViewingProduct.ask);
   closeProductModal();
 }
 
@@ -1044,7 +1051,7 @@ async function createHarvestLot() {
   const loc = document.getElementById('newLotLocation').value.trim() || 'Warangal';
 
   try {
-    await window.productApi.create({
+    await window.farmerApi.createListing({
       commodity: crop,
       qualityGrade: grade,
       quantityAvailableKg: qty,
@@ -1060,7 +1067,7 @@ async function createHarvestLot() {
 
 async function deleteHarvestLot(id) {
   try {
-    await window.productApi.delete(id);
+    await window.farmerApi.deleteListing(id);
     showToast('Harvest lot deleted.');
     loadFarmerListings();
   } catch (err) {
@@ -1164,39 +1171,107 @@ async function viewDealProgress(orderId) {
   }
 }
 
-// ---------------- ADMIN MODERATION ----------------
-const ADMIN_LISTINGS = [
-  { buyer: "Warangal APMC Market", crop: "Tomato", updated: "40 min ago", status: "ok" },
-  { buyer: "Lasalgaon Wholesale Mandi", crop: "Onion", updated: "3 hr ago", status: "ok" },
-  { buyer: "Unverified Buyer #4471", crop: "Cotton", updated: "29 hr ago", status: "flag" },
-  { buyer: "Om Sai Agro Buyers", crop: "Soybean", updated: "55 min ago", status: "ok" },
-  { buyer: "New Listing — Prakash Traders", crop: "Wheat", updated: "5 min ago", status: "pending" },
-  { buyer: "Green Harvest Traders", crop: "Tomato", updated: "31 hr ago", status: "flag" },
-];
-
-function renderAdminTable() {
+// ---------------- ADMIN GOVERNANCE & DATABASE SYNC ----------------
+async function renderAdminTable() {
   const body = document.getElementById('adminTableBody');
   if (!body) return;
-  body.innerHTML = '';
-  ADMIN_LISTINGS.forEach(row => {
-    const statusHtml = row.status === 'ok'
-      ? `<span class="status-pill status-ok">Verified</span>`
-      : row.status === 'flag'
-      ? `<span class="status-pill status-flag">Needs review</span>`
-      : `<span class="status-pill status-pending">Pending</span>`;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${row.buyer}</td>
-      <td>${row.crop}</td>
-      <td>${row.updated}</td>
-      <td>${statusHtml}</td>
-      <td class="admin-actions">
-        <button onclick="showToast('${row.buyer.replace(/'/g, "\\'")} approved.')">Approve</button>
-        <button onclick="showToast('${row.buyer.replace(/'/g, "\\'")} removed from listings.')">Remove</button>
-      </td>
-    `;
-    body.appendChild(tr);
-  });
+
+  body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--ink-soft);"><span class="loading-pulse" style="border-top-color:var(--leaf);"></span> Loading commodities and records from database...</td></tr>';
+
+  try {
+    const [prodRes, catRes, orderRes] = await Promise.allSettled([
+      window.productApi.getAll(),
+      window.productApi.getCategories(),
+      window.orderApi.getOrders(),
+    ]);
+
+    const products = (prodRes.status === 'fulfilled' && (prodRes.value?.data?.products || prodRes.value?.data)) || [];
+    const categories = (catRes.status === 'fulfilled' && (catRes.value?.data?.categories || catRes.value?.data)) || [];
+    const orders = (orderRes.status === 'fulfilled' && (orderRes.value?.data?.orders || orderRes.value?.data)) || [];
+
+    // Populate real Admin metrics directly from the database
+    const statProd = document.getElementById('adminStatProducts');
+    const statCat = document.getElementById('adminStatCategories');
+    const statOrders = document.getElementById('adminStatOrders');
+    if (statProd) statProd.textContent = products.length;
+    if (statCat) statCat.textContent = categories.length;
+    if (statOrders) statOrders.textContent = orders.length;
+
+    body.innerHTML = '';
+    if (products.length === 0) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--ink-soft);">No commodities registered in the database yet.</td></tr>';
+      return;
+    }
+
+    products.forEach(p => {
+      const catName = p.category?.name || 'General Commodity';
+      const priceVal = Number(p.basePrice || 0);
+      const unit = p.standardUnit || 'KG';
+      const isActive = p.isActive !== false;
+      const statusHtml = isActive
+        ? `<span class="status-pill status-ok">Active in DB</span>`
+        : `<span class="status-pill status-flag">Inactive</span>`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b>${p.icon || '🌾'} ${p.name}</b></td>
+        <td>${catName}</td>
+        <td>₹${priceVal.toFixed(2)} / ${unit}</td>
+        <td>${statusHtml}</td>
+        <td class="admin-actions">
+          <button onclick="promptUpdatePrice('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${priceVal})">Update Rate</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:16px;">Failed to load database records: ${err.message}</td></tr>`;
+  }
+}
+
+async function promptUpdatePrice(productId, productName, currentPrice) {
+  const newPrice = prompt(`Enter updated benchmark price for ${productName} (₹/kg):`, currentPrice);
+  if (!newPrice || isNaN(newPrice) || Number(newPrice) <= 0) return;
+
+  try {
+    await window.productApi.update(productId, { basePrice: Number(newPrice) });
+    showToast(`Benchmark rate for ${productName} updated to ₹${newPrice}/kg in database!`);
+    await renderAdminTable();
+    await renderPriceGrid();
+  } catch (err) {
+    showToast('Failed to update benchmark price: ' + err.message);
+  }
+}
+
+async function syncCropsFromDatabase() {
+  try {
+    const res = await window.productApi.getAll();
+    const products = res?.data?.products || res?.data || [];
+    if (products.length > 0) {
+      const cropSelect = document.getElementById('crop');
+      if (cropSelect) {
+        const curVal = cropSelect.value;
+        cropSelect.innerHTML = products.map(p => `<option value="${p.slug || p.name.toLowerCase()}">${p.icon ? p.icon + ' ' : ''}${p.name}</option>`).join('');
+        if (products.some(p => (p.slug || p.name.toLowerCase()) === curVal)) {
+          cropSelect.value = curVal;
+        }
+      }
+
+      const buyerFilter = document.getElementById('buyerCropFilter');
+      if (buyerFilter) {
+        const curVal = buyerFilter.value;
+        buyerFilter.innerHTML = '<option value="">All Crops</option>' + products.map(p => `<option value="${p.name}">${p.icon ? p.icon + ' ' : ''}${p.name}</option>`).join('');
+        buyerFilter.value = curVal;
+      }
+
+      const newLotCrop = document.getElementById('newLotCrop');
+      if (newLotCrop) {
+        newLotCrop.innerHTML = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      }
+    }
+  } catch (e) {
+    console.warn('Could not sync crops from database:', e);
+  }
 }
 
 // ---------------- TOAST FEEDBACK ----------------
@@ -1237,6 +1312,9 @@ async function checkExistingSession() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // Sync crops and options directly from database
+  syncCropsFromDatabase();
+
   // Global 401 Session Expiration Handler
   window.kisanlinkClient.setAuthExpiredHandler(() => {
     document.getElementById('farmerView').classList.add('hidden');

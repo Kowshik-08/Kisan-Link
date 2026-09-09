@@ -192,7 +192,7 @@
     <div class="results" id="results">
       <div class="results-head">
         <div>
-          <h2 id="resTitle">Ranked for your 500 kg of Tomato</h2>
+          <h2 id="resTitle" data-i18n="rankedBuyers">Ranked Buyers</h2>
           <div class="results-sub" data-i18n="resultsSub">Ordered by what you'll actually receive after transport and selling costs — not just the listed price.</div>
         </div>
         <div class="sort-note" data-i18n="sortNote">Sorted: highest net return first</div>
@@ -320,16 +320,16 @@
 
   <div class="wrap dash-wrap">
     <div class="stat-row">
-      <div class="stat-card"><div class="stat-num">1,248</div><div class="stat-label">Registered farmers</div></div>
-      <div class="stat-card"><div class="stat-num">312</div><div class="stat-label">Registered buyers</div></div>
-      <div class="stat-card"><div class="stat-num">7</div><div class="stat-label">Listings flagged this week</div></div>
+      <div class="stat-card"><div class="stat-num" id="adminStatProducts">--</div><div class="stat-label">Commodities in Database</div></div>
+      <div class="stat-card"><div class="stat-num" id="adminStatCategories">--</div><div class="stat-label">Product Categories</div></div>
+      <div class="stat-card"><div class="stat-num" id="adminStatOrders">--</div><div class="stat-label">Deals &amp; Orders Recorded</div></div>
     </div>
 
-    <div class="section-title">Listing moderation</div>
-    <div class="section-sub">Offers older than 24 hours or reported by users need review before they stay visible to farmers.</div>
+    <div class="section-title">Commodity &amp; Price Governance</div>
+    <div class="section-sub">Live commodities, categories, and benchmark rates queried directly from the database.</div>
     <table class="admin-table">
       <thead>
-        <tr><th>Buyer / Market</th><th>Crop</th><th>Last updated</th><th>Status</th><th>Actions</th></tr>
+        <tr><th>Commodity</th><th>Category</th><th>Benchmark Rate</th><th>Database Status</th><th>Actions</th></tr>
       </thead>
       <tbody id="adminTableBody"></tbody>
     </table>
@@ -549,7 +549,7 @@
   // Optional runtime override: set window.KISANLINK_API_URL if frontend is hosted on a separate domain without rewrites
   window.KISANLINK_API_URL = window.KISANLINK_API_URL || '';
 </script>
-<script src="js/api.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/api.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

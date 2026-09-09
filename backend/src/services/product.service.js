@@ -47,7 +47,8 @@ class ProductService {
       orderBy: { name: 'asc' },
     });
 
-    return products;
+    // Return only primary catalog commodities (exclude farmer harvest lots)
+    return products.filter((p) => !p.slug || !p.slug.startsWith('lot_'));
   }
 
   /**

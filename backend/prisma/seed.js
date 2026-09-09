@@ -311,6 +311,39 @@ async function main() {
 
   console.log('🌾 Seeded 5 primary agricultural commodities.');
 
+  // Seed authentic harvest lots listed by farmers in the database
+  await prisma.product.create({
+    data: {
+      name: 'Tomato',
+      slug: `lot_${userFarmer1.farmer.id}_500_GRADE_A_seed1`,
+      icon: '🍅',
+      basePrice: 19.00,
+      standardUnit: 'KG',
+      priceTrend: [19.00],
+      categoryId: catVegetables.id,
+      nameTe: userFarmer1.farmer.id,
+      nameHi: '500|GRADE_A|Narsampet, Warangal',
+      isActive: true,
+    }
+  });
+
+  await prisma.product.create({
+    data: {
+      name: 'Onion',
+      slug: `lot_${userFarmer2.farmer.id}_800_GRADE_A_seed2`,
+      icon: '🧅',
+      basePrice: 15.00,
+      standardUnit: 'KG',
+      priceTrend: [15.00],
+      categoryId: catVegetables.id,
+      nameTe: userFarmer2.farmer.id,
+      nameHi: '800|GRADE_A|ReddyPalem, Warangal',
+      isActive: true,
+    }
+  });
+
+  console.log('🌾 Seeded active farmer harvest listings.');
+
   // 6. Seed a completed Order with Review (Stage 7 Demo)
   const order1 = await prisma.order.create({
     data: {

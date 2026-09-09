@@ -58,6 +58,16 @@ class FarmerController {
       next(error);
     }
   }
+
+  static async deleteHarvestLot(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await FarmerService.deleteHarvestLot(req.user.id, id);
+      return ApiResponse.success(res, result, 'Harvest lot deleted.');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = FarmerController;
